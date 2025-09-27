@@ -86,18 +86,31 @@ class TypeMaster {
         document.addEventListener('input', (e) => {
             if (e.target === this.mobileInput && this.gameActive) {
                 const inputValue = e.target.value;
-                if (inputValue.length > this.userInput.length) {
-                    // New character typed
-                    const newChar = inputValue[inputValue.length - 1];
-                    this.handleInput(newChar);
+                if (inputValue.length > 0) {
+                    // Process each new character
+                    for (let i = 0; i < inputValue.length; i++) {
+                        const char = inputValue[i];
+                        if (char && char.length === 1) {
+                            this.handleInput(char);
+                        }
+                    }
+                    // Clear the input immediately
+                    e.target.value = '';
                 }
-                // Reset the input value to prevent accumulation
-                e.target.value = '';
             }
         });
         
         // Focus management for mobile
         this.elements.targetText.addEventListener('click', () => this.focusForMobile());
+        this.elements.targetText.addEventListener('touchstart', () => this.focusForMobile());
+        
+        // Additional mobile input events
+        document.addEventListener('keyup', (e) => {
+            if (e.target === this.mobileInput && this.gameActive && e.key.length === 1) {
+                this.handleInput(e.key);
+                e.target.value = '';
+            }
+        });
         
         // Prevent zoom on double tap for mobile
         let lastTouchEnd = 0;
@@ -255,19 +268,39 @@ class TypeMaster {
         // Create a hidden input for mobile keyboard support
         if (!this.mobileInput) {
             this.mobileInput = document.createElement('input');
-            this.mobileInput.style.position = 'absolute';
-            this.mobileInput.style.left = '-9999px';
+            this.mobileInput.type = 'text';
+            this.mobileInput.style.position = 'fixed';
+            this.mobileInput.style.top = '0';
+            this.mobileInput.style.left = '0';
+            this.mobileInput.style.width = '1px';
+            this.mobileInput.style.height = '1px';
             this.mobileInput.style.opacity = '0';
-            this.mobileInput.style.pointerEvents = 'none';
+            this.mobileInput.style.border = 'none';
+            this.mobileInput.style.outline = 'none';
+            this.mobileInput.style.zIndex = '-1';
             this.mobileInput.autocomplete = 'off';
             this.mobileInput.autocorrect = 'off';
             this.mobileInput.autocapitalize = 'off';
             this.mobileInput.spellcheck = false;
+            this.mobileInput.inputMode = 'text';
             document.body.appendChild(this.mobileInput);
+            
+            // Prevent scrolling when input is focused
+            this.mobileInput.addEventListener('focus', () => {
+                window.scrollTo(0, 0);
+                document.body.classList.add('mobile-focus');
+            });
+            
+            this.mobileInput.addEventListener('blur', () => {
+                document.body.classList.remove('mobile-focus');
+            });
         }
         
         if (this.gameActive) {
-            this.mobileInput.focus();
+            // Small delay to ensure proper focus
+            setTimeout(() => {
+                this.mobileInput.focus();
+            }, 100);
         }
     }
     
