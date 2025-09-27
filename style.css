@@ -120,12 +120,13 @@ header h1 {
     border-radius: 15px;
     border: 1px solid rgba(255, 255, 255, 0.1);
     min-height: 150px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     font-family: 'JetBrains Mono', 'Consolas', monospace;
     letter-spacing: 1px;
     word-spacing: 4px;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    white-space: pre-wrap;
+    text-align: left;
 }
 
 .letter {
@@ -152,6 +153,26 @@ header h1 {
 .letter.pending {
     color: #6b7280;
     opacity: 0.6;
+}
+
+.letter.space {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+    min-width: 0.5em;
+    display: inline-block;
+}
+
+.letter.space.correct {
+    background-color: rgba(74, 222, 128, 0.2);
+}
+
+.letter.space.incorrect {
+    background-color: rgba(248, 113, 113, 0.3);
+}
+
+.letter.space.current {
+    background-color: rgba(0, 212, 255, 0.4);
+    animation: pulse 1s infinite;
 }
 
 @keyframes pulse {
@@ -337,8 +358,11 @@ header h1 {
         font-size: 3rem;
     }
     
-    .target-text, .user-input {
+    .target-text {
         font-size: 1.2rem;
+        padding: 20px;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
     }
     
     .controls {

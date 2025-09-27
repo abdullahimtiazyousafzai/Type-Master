@@ -1,22 +1,22 @@
 class TypeMaster {
     constructor() {
         this.currentLevel = 1;
-        this.score = 0;
-        this.wpm = 0;
-        this.accuracy = 100;
         this.timeLeft = 60;
         this.gameActive = false;
         this.timer = null;
         this.startTime = null;
-        this.wordsTyped = 0;
+        this.endTime = null;
+        this.wordsCompleted = 0;
         this.correctChars = 0;
         this.totalChars = 0;
         this.currentCharIndex = 0;
         this.currentText = '';
         this.userInput = '';
         this.errors = 0;
-        this.bestWpm = 0;
-        this.bestAccuracy = 100;
+        this.bestAccuracy = parseInt(localStorage.getItem('bestAccuracy')) || 100;
+        this.finalWpm = 0;
+        this.finalAccuracy = 100;
+        this.usedWords = new Set(); // Track words used in current game
         
         // Word lists for different difficulty levels
         this.wordLists = {
@@ -55,9 +55,9 @@ class TypeMaster {
     initializeElements() {
         this.elements = {
             level: document.getElementById('level'),
-            score: document.getElementById('score'),
-            wpm: document.getElementById('wpm'),
-            accuracy: document.getElementById('accuracy'),
+            timerDisplay: document.getElementById('timerDisplay'),
+            wordsCompleted: document.getElementById('wordsCompleted'),
+            progress: document.getElementById('progress'),
             timer: document.getElementById('timer'),
             targetText: document.getElementById('targetText'),
             progressFill: document.getElementById('progressFill'),
@@ -67,9 +67,9 @@ class TypeMaster {
             levelInfo: document.getElementById('levelInfo'),
             gameOverModal: document.getElementById('gameOverModal'),
             finalLevel: document.getElementById('finalLevel'),
-            finalScore: document.getElementById('finalScore'),
             finalWpm: document.getElementById('finalWpm'),
             finalAccuracy: document.getElementById('finalAccuracy'),
+            bestAccuracy: document.getElementById('bestAccuracy'),
             playAgainBtn: document.getElementById('playAgainBtn')
         };
     }
@@ -94,19 +94,17 @@ class TypeMaster {
     resetGame() {
         this.gameActive = false;
         this.currentLevel = 1;
-        this.score = 0;
-        this.wpm = 0;
-        this.accuracy = 100;
         this.timeLeft = 60;
-        this.wordsTyped = 0;
+        this.wordsCompleted = 0;
         this.correctChars = 0;
         this.totalChars = 0;
         this.currentCharIndex = 0;
         this.currentText = '';
         this.userInput = '';
         this.errors = 0;
-        this.bestWpm = 0;
-        this.bestAccuracy = 100;
+        this.finalWpm = 0;
+        this.finalAccuracy = 100;
+        this.usedWords.clear(); // Clear used words for new game
         
         if (this.timer) {
             clearInterval(this.timer);
@@ -129,9 +127,36 @@ class TypeMaster {
         const wordCount = Math.min(10 + this.currentLevel * 2, 20);
         const words = [];
         
+        // Get available words (not yet used in this game)
+        const availableWords = levelData.words.filter(word => !this.usedWords.has(word));
+        
         for (let i = 0; i < wordCount; i++) {
-            const randomWord = levelData.words[Math.floor(Math.random() * levelData.words.length)];
-            words.push(randomWord);
+            let selectedWord;
+            
+            if (availableWords.length > 0) {
+                // Select from available words
+                const randomIndex = Math.floor(Math.random() * availableWords.length);
+                selectedWord = availableWords[randomIndex];
+                // Remove selected word from available words
+                availableWords.splice(randomIndex, 1);
+            } else {
+                // If no more unique words, allow repeats but prefer less used ones
+                const wordUsage = {};
+                this.usedWords.forEach(word => {
+                    wordUsage[word] = (wordUsage[word] || 0) + 1;
+                });
+                
+                // Find least used words
+                let leastUsedCount = Math.min(...Object.values(wordUsage));
+                const leastUsedWords = levelData.words.filter(word => 
+                    (wordUsage[word] || 0) === leastUsedCount
+                );
+                
+                selectedWord = leastUsedWords[Math.floor(Math.random() * leastUsedWords.length)];
+            }
+            
+            words.push(selectedWord);
+            this.usedWords.add(selectedWord);
         }
         
         this.currentText = words.join(' ');
@@ -149,6 +174,12 @@ class TypeMaster {
         let html = '';
         for (let i = 0; i < this.currentText.length; i++) {
             let className = 'letter';
+            const char = this.currentText[i];
+            
+            // Add space class for space characters
+            if (char === ' ') {
+                className += ' space';
+            }
             
             if (i < this.currentCharIndex) {
                 // Check if this character was typed correctly
@@ -165,7 +196,9 @@ class TypeMaster {
                 className += ' pending';
             }
             
-            html += `<span class="${className}">${this.currentText[i]}</span>`;
+            // Handle space character display - make spaces empty
+            const displayChar = char === ' ' ? '' : char;
+            html += `<span class="${className}">${displayChar}</span>`;
         }
         
         this.elements.targetText.innerHTML = html;
@@ -174,10 +207,12 @@ class TypeMaster {
     startTimer() {
         this.timeLeft = this.wordLists[this.currentLevel].timeLimit;
         this.elements.timer.textContent = this.timeLeft;
+        this.elements.timerDisplay.textContent = this.timeLeft + 's';
         
         this.timer = setInterval(() => {
             this.timeLeft--;
             this.elements.timer.textContent = this.timeLeft;
+            this.elements.timerDisplay.textContent = this.timeLeft + 's';
             
             if (this.timeLeft <= 0) {
                 this.endGame();
@@ -220,7 +255,6 @@ class TypeMaster {
         this.currentCharIndex++;
         
         this.renderText();
-        this.calculateStats();
         this.updateProgress();
         
         // Check if level is complete
@@ -230,7 +264,7 @@ class TypeMaster {
     }
     
     completeLevel() {
-        this.score += this.calculateLevelScore();
+        this.wordsCompleted++;
         this.currentLevel++;
         
         if (this.currentLevel > 5) {
@@ -248,41 +282,30 @@ class TypeMaster {
         this.updateDisplay();
     }
     
-    calculateLevelScore() {
-        const baseScore = 100;
-        const timeBonus = Math.max(0, this.timeLeft * 2);
-        const accuracyBonus = Math.floor((this.accuracy / 100) * 50);
-        const levelMultiplier = this.currentLevel;
-        
-        return (baseScore + timeBonus + accuracyBonus) * levelMultiplier;
-    }
-    
-    calculateStats() {
-        if (this.startTime) {
-            const elapsed = (Date.now() - this.startTime) / 1000 / 60; // minutes
-            this.wpm = elapsed > 0 ? Math.round((this.correctChars / 5) / elapsed) : 0;
-            
-            // Update best WPM
-            if (this.wpm > this.bestWpm) {
-                this.bestWpm = this.wpm;
-            }
+    calculateFinalStats() {
+        // Calculate final WPM
+        if (this.startTime && this.endTime) {
+            const elapsed = (this.endTime - this.startTime) / 1000 / 60; // minutes
+            this.finalWpm = elapsed > 0 ? Math.round((this.correctChars / 5) / elapsed) : 0;
         }
         
-        this.accuracy = this.totalChars > 0 ? Math.round((this.correctChars / this.totalChars) * 100) : 100;
+        // Calculate final accuracy
+        this.finalAccuracy = this.totalChars > 0 ? Math.round((this.correctChars / this.totalChars) * 100) : 100;
         
-        // Update best accuracy
-        if (this.accuracy > this.bestAccuracy) {
-            this.bestAccuracy = this.accuracy;
+        // Update best accuracy if current is better
+        if (this.finalAccuracy > this.bestAccuracy) {
+            this.bestAccuracy = this.finalAccuracy;
+            localStorage.setItem('bestAccuracy', this.bestAccuracy.toString());
         }
-        
-        this.updateDisplay();
     }
     
     updateDisplay() {
         this.elements.level.textContent = this.currentLevel;
-        this.elements.score.textContent = this.score;
-        this.elements.wpm.textContent = this.wpm;
-        this.elements.accuracy.textContent = this.accuracy + '%';
+        this.elements.wordsCompleted.textContent = this.wordsCompleted;
+        
+        // Calculate progress percentage
+        const progress = this.totalChars > 0 ? Math.round((this.currentCharIndex / this.totalChars) * 100) : 0;
+        this.elements.progress.textContent = progress + '%';
         
         // Update level info
         const levelData = this.wordLists[this.currentLevel];
@@ -304,11 +327,16 @@ class TypeMaster {
         const progress = Math.min((this.currentCharIndex / this.currentText.length) * 100, 100);
         
         this.elements.progressFill.style.width = progress + '%';
-        this.elements.progressText.textContent = `${this.currentCharIndex} / ${this.currentText.length} characters`;
+        this.elements.progressText.textContent = `Progress: ${Math.round(progress)}%`;
+        
+        // Update the progress display in header
+        const overallProgress = this.totalChars > 0 ? Math.round((this.currentCharIndex / this.totalChars) * 100) : 0;
+        this.elements.progress.textContent = overallProgress + '%';
     }
     
     endGame() {
         this.gameActive = false;
+        this.endTime = Date.now();
         
         if (this.timer) {
             clearInterval(this.timer);
@@ -316,13 +344,19 @@ class TypeMaster {
         }
         
         // Calculate final stats
-        this.calculateStats();
+        this.calculateFinalStats();
         
         // Show game over modal
         this.elements.finalLevel.textContent = this.currentLevel;
-        this.elements.finalScore.textContent = this.score;
-        this.elements.finalWpm.textContent = this.bestWpm;
-        this.elements.finalAccuracy.textContent = this.bestAccuracy + '%';
+        this.elements.finalWpm.textContent = this.finalWpm;
+        this.elements.finalAccuracy.textContent = this.finalAccuracy + '%';
+        this.elements.bestAccuracy.textContent = this.bestAccuracy + '%';
+        
+        console.log('Final stats:', {
+            finalWpm: this.finalWpm,
+            finalAccuracy: this.finalAccuracy,
+            bestAccuracy: this.bestAccuracy
+        });
         
         this.elements.gameOverModal.classList.add('show');
     }
