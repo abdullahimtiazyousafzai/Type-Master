@@ -269,9 +269,9 @@ class TypeMaster {
         if (!this.mobileInput) {
             this.mobileInput = document.createElement('input');
             this.mobileInput.type = 'text';
-            this.mobileInput.style.position = 'fixed';
-            this.mobileInput.style.top = '0';
-            this.mobileInput.style.left = '0';
+            this.mobileInput.style.position = 'absolute';
+            this.mobileInput.style.top = '-1000px';
+            this.mobileInput.style.left = '-1000px';
             this.mobileInput.style.width = '1px';
             this.mobileInput.style.height = '1px';
             this.mobileInput.style.opacity = '0';
@@ -287,7 +287,6 @@ class TypeMaster {
             
             // Prevent scrolling when input is focused
             this.mobileInput.addEventListener('focus', () => {
-                window.scrollTo(0, 0);
                 document.body.classList.add('mobile-focus');
             });
             

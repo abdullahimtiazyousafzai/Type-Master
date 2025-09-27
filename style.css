@@ -442,9 +442,9 @@ header h1 {
 
 /* Hide mobile input */
 .mobile-input {
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
+    position: absolute !important;
+    top: -1000px !important;
+    left: -1000px !important;
     width: 1px !important;
     height: 1px !important;
     opacity: 0 !important;
@@ -456,12 +456,8 @@ header h1 {
 
 /* Prevent page jumping on mobile */
 body.mobile-focus {
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    width: 100% !important;
-    height: 100% !important;
-    overflow: hidden !important;
+    position: relative;
+    overflow-x: hidden;
 }
 
 /* Ensure proper mobile viewport */
