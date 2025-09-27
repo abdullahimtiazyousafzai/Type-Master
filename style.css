@@ -440,36 +440,29 @@ header h1 {
     -webkit-touch-callout: none;
 }
 
-/* Hide mobile input */
+/* Hide mobile input completely */
 .mobile-input {
     position: absolute !important;
-    top: -1000px !important;
-    left: -1000px !important;
+    top: -9999px !important;
+    left: -9999px !important;
     width: 1px !important;
     height: 1px !important;
     opacity: 0 !important;
     border: none !important;
     outline: none !important;
-    z-index: -1 !important;
+    z-index: -9999 !important;
     pointer-events: none !important;
-}
-
-/* Prevent page jumping on mobile */
-body.mobile-focus {
-    position: relative;
-    overflow-x: hidden;
+    tab-index: -1 !important;
 }
 
 /* Ensure proper mobile viewport */
 @media screen and (max-width: 768px) {
     html {
         height: 100%;
-        overflow: hidden;
     }
     
     body {
         height: 100%;
-        overflow: auto;
         -webkit-overflow-scrolling: touch;
     }
 }

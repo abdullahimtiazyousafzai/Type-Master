@@ -130,9 +130,6 @@ class TypeMaster {
         
         this.generateText();
         this.startTimer();
-        
-        // Auto-focus for mobile devices
-        this.focusForMobile();
     }
     
     resetGame() {
@@ -265,41 +262,32 @@ class TypeMaster {
     }
     
     focusForMobile() {
-        // Create a hidden input for mobile keyboard support
+        // Create a completely invisible input that won't cause scrolling
         if (!this.mobileInput) {
             this.mobileInput = document.createElement('input');
             this.mobileInput.type = 'text';
             this.mobileInput.style.position = 'absolute';
-            this.mobileInput.style.top = '-1000px';
-            this.mobileInput.style.left = '-1000px';
+            this.mobileInput.style.top = '-9999px';
+            this.mobileInput.style.left = '-9999px';
             this.mobileInput.style.width = '1px';
             this.mobileInput.style.height = '1px';
             this.mobileInput.style.opacity = '0';
             this.mobileInput.style.border = 'none';
             this.mobileInput.style.outline = 'none';
-            this.mobileInput.style.zIndex = '-1';
+            this.mobileInput.style.zIndex = '-9999';
+            this.mobileInput.style.pointerEvents = 'none';
             this.mobileInput.autocomplete = 'off';
             this.mobileInput.autocorrect = 'off';
             this.mobileInput.autocapitalize = 'off';
             this.mobileInput.spellcheck = false;
             this.mobileInput.inputMode = 'text';
+            this.mobileInput.tabIndex = -1;
             document.body.appendChild(this.mobileInput);
-            
-            // Prevent scrolling when input is focused
-            this.mobileInput.addEventListener('focus', () => {
-                document.body.classList.add('mobile-focus');
-            });
-            
-            this.mobileInput.addEventListener('blur', () => {
-                document.body.classList.remove('mobile-focus');
-            });
         }
         
         if (this.gameActive) {
-            // Small delay to ensure proper focus
-            setTimeout(() => {
-                this.mobileInput.focus();
-            }, 100);
+            // Focus without any side effects
+            this.mobileInput.focus({ preventScroll: true });
         }
     }
     
