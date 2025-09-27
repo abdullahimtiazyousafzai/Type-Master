@@ -363,6 +363,8 @@ header h1 {
         padding: 20px;
         word-wrap: break-word;
         overflow-wrap: break-word;
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
     }
     
     .controls {
@@ -373,4 +375,75 @@ header h1 {
     .final-stats {
         grid-template-columns: 1fr;
     }
+    
+    .btn {
+        padding: 18px 35px;
+        font-size: 1.2rem;
+        min-height: 48px;
+        touch-action: manipulation;
+    }
+}
+
+/* Mobile-specific improvements */
+@media (max-width: 480px) {
+    .container {
+        padding: 10px;
+    }
+    
+    .game-area {
+        padding: 15px;
+        border-radius: 15px;
+    }
+    
+    .target-text {
+        font-size: 1.1rem;
+        padding: 15px;
+        line-height: 1.8;
+    }
+    
+    .timer {
+        font-size: 2.5rem;
+    }
+    
+    .stats {
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+    
+    .stat {
+        min-width: 80px;
+        padding: 8px 12px;
+    }
+    
+    .stat .label {
+        font-size: 0.8rem;
+    }
+    
+    .stat span:last-child {
+        font-size: 1.3rem;
+    }
+}
+
+/* Prevent zoom on input focus for mobile */
+@media screen and (max-width: 768px) {
+    input, select, textarea {
+        font-size: 16px !important;
+    }
+}
+
+/* Touch improvements */
+.target-text {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+}
+
+/* Hide mobile input */
+.mobile-input {
+    position: absolute !important;
+    left: -9999px !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
 }

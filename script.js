@@ -79,7 +79,35 @@ class TypeMaster {
         this.elements.resetBtn.addEventListener('click', () => this.resetGame());
         this.elements.playAgainBtn.addEventListener('click', () => this.playAgain());
         
+        // Desktop keyboard events
         document.addEventListener('keydown', (e) => this.handleKeyDown(e));
+        
+        // Mobile keyboard support
+        document.addEventListener('input', (e) => {
+            if (e.target === this.mobileInput && this.gameActive) {
+                const inputValue = e.target.value;
+                if (inputValue.length > this.userInput.length) {
+                    // New character typed
+                    const newChar = inputValue[inputValue.length - 1];
+                    this.handleInput(newChar);
+                }
+                // Reset the input value to prevent accumulation
+                e.target.value = '';
+            }
+        });
+        
+        // Focus management for mobile
+        this.elements.targetText.addEventListener('click', () => this.focusForMobile());
+        
+        // Prevent zoom on double tap for mobile
+        let lastTouchEnd = 0;
+        document.addEventListener('touchend', (e) => {
+            const now = (new Date()).getTime();
+            if (now - lastTouchEnd <= 300) {
+                e.preventDefault();
+            }
+            lastTouchEnd = now;
+        }, false);
     }
     
     startGame() {
@@ -89,6 +117,9 @@ class TypeMaster {
         
         this.generateText();
         this.startTimer();
+        
+        // Auto-focus for mobile devices
+        this.focusForMobile();
     }
     
     resetGame() {
@@ -218,6 +249,26 @@ class TypeMaster {
                 this.endGame();
             }
         }, 1000);
+    }
+    
+    focusForMobile() {
+        // Create a hidden input for mobile keyboard support
+        if (!this.mobileInput) {
+            this.mobileInput = document.createElement('input');
+            this.mobileInput.style.position = 'absolute';
+            this.mobileInput.style.left = '-9999px';
+            this.mobileInput.style.opacity = '0';
+            this.mobileInput.style.pointerEvents = 'none';
+            this.mobileInput.autocomplete = 'off';
+            this.mobileInput.autocorrect = 'off';
+            this.mobileInput.autocapitalize = 'off';
+            this.mobileInput.spellcheck = false;
+            document.body.appendChild(this.mobileInput);
+        }
+        
+        if (this.gameActive) {
+            this.mobileInput.focus();
+        }
     }
     
     handleKeyDown(e) {
