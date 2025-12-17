@@ -436,43 +436,81 @@ class TypeMaster {
     
     async fetchHighestScore() {
         try {
-            const response = await fetch(`${this.apiBaseUrl}/results`);
+            console.log('Fetching highest score from:', `${this.apiBaseUrl}/results`);
+            const response = await fetch(`${this.apiBaseUrl}/results`, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                },
+                mode: 'cors'
+            });
+            
+            console.log('Response status:', response.status, response.statusText);
+            console.log('Response headers:', [...response.headers.entries()]);
             
             if (response.ok) {
                 const data = await response.json();
+                console.log('Received data:', data);
+                console.log('Data type:', typeof data, 'Is array:', Array.isArray(data));
+                
                 // Handle different response formats
-                // If it returns an array, take the first one (should be highest)
-                // If it returns a single object, use it directly
                 if (Array.isArray(data)) {
                     if (data.length > 0) {
-                        this.highestScore = data[0];
+                        // Find the highest score: prioritize WPM, then accuracy if tied
+                        this.highestScore = data.reduce((highest, current) => {
+                            if (current.wpm > highest.wpm) {
+                                return current;
+                            } else if (current.wpm === highest.wpm && current.accuracy > highest.accuracy) {
+                                return current;
+                            }
+                            return highest;
+                        }, data[0]);
+                        console.log('Highest score found:', this.highestScore);
                     } else {
                         this.highestScore = null;
+                        console.log('No scores in array');
                     }
                 } else if (data && typeof data === 'object' && data.wpm !== undefined) {
                     this.highestScore = data;
+                    console.log('Single score object:', this.highestScore);
                 } else {
                     this.highestScore = null;
+                    console.log('Unexpected data format:', data);
                 }
                 
                 // Update display
                 if (this.elements.highestScore) {
                     if (this.highestScore && this.highestScore.wpm !== undefined && this.highestScore.accuracy !== undefined) {
                         this.elements.highestScore.textContent = `${this.highestScore.wpm} WPM (${this.highestScore.accuracy}%)`;
+                        console.log('Updated highest score display to:', this.elements.highestScore.textContent);
                     } else {
                         this.elements.highestScore.textContent = 'No scores yet';
+                        console.log('No valid score to display. highestScore:', this.highestScore);
                     }
+                } else {
+                    console.error('highestScore element not found in DOM');
                 }
             } else {
-                console.error('Failed to fetch highest score:', response.statusText);
+                const errorText = await response.text();
+                console.error('Failed to fetch highest score:', response.status, response.statusText, errorText);
                 if (this.elements.highestScore) {
-                    this.elements.highestScore.textContent = 'N/A';
+                    this.elements.highestScore.textContent = `Error: ${response.status}`;
                 }
             }
         } catch (error) {
             console.error('Error fetching highest score:', error);
+            console.error('Error name:', error.name);
+            console.error('Error message:', error.message);
+            console.error('Error stack:', error.stack);
             if (this.elements.highestScore) {
-                this.elements.highestScore.textContent = 'N/A';
+                // Show more detailed error info
+                if (error.message && error.message.includes('CORS')) {
+                    this.elements.highestScore.textContent = 'CORS Error - Check console';
+                } else if (error.message && error.message.includes('Failed to fetch')) {
+                    this.elements.highestScore.textContent = 'Network Error - Check console';
+                } else {
+                    this.elements.highestScore.textContent = `Error: ${error.message || 'Unknown'}`;
+                }
             }
         }
     }
