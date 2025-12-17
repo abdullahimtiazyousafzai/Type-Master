@@ -17,6 +17,8 @@ class TypeMaster {
         this.finalWpm = 0;
         this.finalAccuracy = 100;
         this.usedWords = new Set(); // Track words used in current game
+        this.apiBaseUrl = 'http://hackarheck.pythonanywhere.com';
+        this.highestScore = null;
         
         // Word lists for different difficulty levels
         this.wordLists = {
@@ -50,6 +52,7 @@ class TypeMaster {
         this.initializeElements();
         this.bindEvents();
         this.updateDisplay();
+        this.fetchHighestScore();
     }
     
     initializeElements() {
@@ -70,7 +73,8 @@ class TypeMaster {
             finalWpm: document.getElementById('finalWpm'),
             finalAccuracy: document.getElementById('finalAccuracy'),
             bestAccuracy: document.getElementById('bestAccuracy'),
-            playAgainBtn: document.getElementById('playAgainBtn')
+            playAgainBtn: document.getElementById('playAgainBtn'),
+            highestScore: document.getElementById('highestScore')
         };
     }
     
@@ -405,7 +409,75 @@ class TypeMaster {
         this.elements.progress.textContent = overallProgress + '%';
     }
     
-    endGame() {
+    async submitResults() {
+        try {
+            const response = await fetch(`${this.apiBaseUrl}/submit`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    wpm: this.finalWpm,
+                    accuracy: this.finalAccuracy
+                })
+            });
+            
+            if (response.ok) {
+                console.log('Results submitted successfully');
+                // Fetch updated highest score after submission
+                await this.fetchHighestScore();
+            } else {
+                console.error('Failed to submit results:', response.statusText);
+            }
+        } catch (error) {
+            console.error('Error submitting results:', error);
+        }
+    }
+    
+    async fetchHighestScore() {
+        try {
+            const response = await fetch(`${this.apiBaseUrl}/results`);
+            
+            if (response.ok) {
+                const data = await response.json();
+                // Handle different response formats
+                // If it returns an array, take the first one (should be highest)
+                // If it returns a single object, use it directly
+                if (Array.isArray(data)) {
+                    if (data.length > 0) {
+                        this.highestScore = data[0];
+                    } else {
+                        this.highestScore = null;
+                    }
+                } else if (data && typeof data === 'object' && data.wpm !== undefined) {
+                    this.highestScore = data;
+                } else {
+                    this.highestScore = null;
+                }
+                
+                // Update display
+                if (this.elements.highestScore) {
+                    if (this.highestScore && this.highestScore.wpm !== undefined && this.highestScore.accuracy !== undefined) {
+                        this.elements.highestScore.textContent = `${this.highestScore.wpm} WPM (${this.highestScore.accuracy}%)`;
+                    } else {
+                        this.elements.highestScore.textContent = 'No scores yet';
+                    }
+                }
+            } else {
+                console.error('Failed to fetch highest score:', response.statusText);
+                if (this.elements.highestScore) {
+                    this.elements.highestScore.textContent = 'N/A';
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching highest score:', error);
+            if (this.elements.highestScore) {
+                this.elements.highestScore.textContent = 'N/A';
+            }
+        }
+    }
+    
+    async endGame() {
         this.gameActive = false;
         this.endTime = Date.now();
         
@@ -416,6 +488,9 @@ class TypeMaster {
         
         // Calculate final stats
         this.calculateFinalStats();
+        
+        // Submit results to API
+        await this.submitResults();
         
         // Show game over modal
         this.elements.finalLevel.textContent = this.currentLevel;
