@@ -17,7 +17,7 @@ class TypeMaster {
         this.finalWpm = 0;
         this.finalAccuracy = 100;
         this.usedWords = new Set(); // Track words used in current game
-        this.apiBaseUrl = 'http://hackarheck.pythonanywhere.com';
+        this.apiBaseUrl = 'https://hackarheck.pythonanywhere.com';
         this.highestScore = null;
         
         // Word lists for different difficulty levels
